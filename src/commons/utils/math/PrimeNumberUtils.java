@@ -3,6 +3,7 @@ package commons.utils.math;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Random;
 import java.util.Set;
 
 public class PrimeNumberUtils {
@@ -107,7 +108,7 @@ public class PrimeNumberUtils {
 		return ans;
 	}
 
-	private Map<Integer, Integer> uniquePrimeFactors(int n) {
+	public Map<Integer, Integer> uniquePrimeFactors(int n) {
 		Map<Integer, Integer> factorPower = new HashMap<Integer, Integer>();
 		Integer num;
 		while(n%2==0){
@@ -149,6 +150,145 @@ public class PrimeNumberUtils {
 		return ans;
 	}
 
+	public boolean isProbablePrime(int n){
+		if(powModuloN(2, n-1, n)==1){
+			return true;
+		}
+
+		return false;
+	}
+
+	/*    Start: 29/01/2016*/
+	public boolean millerRabinPrimalityTest(int p, int iteration){
+		if(p<2){
+			return false;
+		}
+
+		if(p!=2 && p%2==0){
+			return false;
+		}
+
+		int m=p-1;
+		while(m%2==0){
+			m/=2;
+		}
+
+		int i, a, temp, b;
+		Random random = new Random();
+		for(i=0;i<iteration;i++){
+			a = random.nextInt(p-1)+1;
+			temp = m;
+			b=powModuloN(a,temp,p);
+			while(temp!=p-1 && b!=1 && b!=p-1){
+				b = (b*b) % p;
+				temp *= 2;
+			}
+			if(b!=p-1 && temp%2==0){
+				return false;
+			}
+		}
+
+		return true;
+	}
+
+
+	/**
+	 * Fermat's test for checking primality, the more iterations the more is accuracy
+	 * Doesn't work for Carmichael numbers for which all values of a<p for which
+	 * gcd(a,p)=1, (a^(p-1))%p = 1.
+	 *
+	 * */
+	public boolean fermatPrimalityTest(int p,int iterations){
+		if(p == 1){ // 1 isn't prime
+			return false;
+		}
+
+		Random random = new Random();
+		int i, a;
+		for(i=0;i<iterations;i++){
+			// choose a random integer between 1 and p-1 ( inclusive )
+			a = random.nextInt(p-1)+1;
+			// powModuloN is the function we developed above for modular exponentiation.
+			if(powModuloN(a,p-1,p) != 1){
+				return false; /* p is definitely composite */
+			}
+		}
+		return true; /* p is probably prime */
+	}
+
+
+	/**
+	 * Legendre Symbol:
+	 * This symbol is defined for a pair of integers a and p such that p is prime.
+	 * It is denoted by (a/p) and calculated as:
+	 * */
+	public int lengendreSymbol(int a, int p){
+		if(a%p==0)
+			return 0;
+		if(powModuloN(a, (p-1)/2, p)==1){
+			return 1;
+		}
+
+		return -1;
+	}
+
+	//calculates Jacobian(a/n) n>0 and n is odd
+	public int calculateJacobian(int a,int n){
+		if(a==0) return 0; // (0/n) = 0
+		int ans=1;
+		if(a<0){
+			a=-a;    // (a/n) = (-a/n)*(-1/n)
+			if(n%4==3) ans=-ans; // (-1/n) = -1 if n = 3 ( mod 4 )
+		}
+		if(a==1) return ans; // (1/n) = 1
+		while(a>0){
+			if(a<0){
+				a=-a;    // (a/n) = (-a/n)*(-1/n)
+				if(n%4==3) ans=-ans;    // (-1/n) = -1 if n = 3 ( mod 4 )
+			}
+			while(a%2==0){
+				a=a/2;    // Property (iii)
+				if(n%8==3||n%8==5) ans=-ans;   
+			}
+
+			//System.out.println("a: "+a+" n: "+n );
+			a = a^n;
+			n = a^n;
+			a = a^n;// Property (iv)
+			//System.out.println("a: "+a+" n: "+n );
+
+			if(a%4==3 && n%4==3) ans=-ans; // Property (iv)
+			a=a%n; // because (a/p) = (a%p / p ) and a%pi = (a%n)%pi if n % pi = 0
+			if(a>n/2) a=a-n;
+		}
+		if(n==1) return ans;
+		return 0;
+	}
+
+	/* Iterations determine the accuracy of the test */
+	public boolean solovoyPrimalityTest(int p, int iteration){
+		if(p<2)
+			return false;
+
+		if(p!=2 && p%2==0)
+			return false;
+
+		Random random = new Random();
+		int i, a, jacobian, mod;
+		for(i=0;i<iteration;i++){
+			a = random.nextInt(p-1)+1;
+			jacobian = (p+calculateJacobian(a,p))%p;
+			mod = powModuloN(a, (p-1)/2, p);
+
+			if(jacobian==0 || mod!=jacobian){
+				return false;
+			}
+		}
+		return true;
+	}
+
+	/*End: 29/01/2016*/
+
 	public static void main(String[] args) {
 		PrimeNumberUtils primeUtils = new PrimeNumberUtils(1000000);
 		System.out.println(primeUtils.isPrime(165576));
@@ -165,6 +305,46 @@ public class PrimeNumberUtils {
 		int [] n = {3, 5, 7};
 
 		System.out.println(primeUtils.chineseRemainder(a, n, 3));
-	}
+		
+		Map<Integer, Integer> factorPower = primeUtils.uniquePrimeFactors(315);
+        Set<Integer> keySet = factorPower.keySet();
+        for(Integer key : keySet){
+              System.out.println("Factor: "+key+" Power: "+factorPower.get(key));
+        }
 
+        System.out.println(primeUtils.eulerTotient(7));
+        System.out.println(primeUtils.gcd(7, 100));
+        System.out.println(primeUtils.powModuloN(7, 91, 100));
+		
+        System.out.println(primeUtils.isProbablePrime(31));
+
+		System.out.println("Miller Rabin:");
+		for(int i=1; i<100; i++){
+			if(primeUtils.millerRabinPrimalityTest(i, 10)){
+				System.out.println(i);
+			}
+		}    
+
+		System.out.println("Fermat:");
+		for(int i=5; i<100; i++){
+			if(primeUtils.fermatPrimalityTest(i, 10)){
+				System.out.println(i);
+			}
+		}    
+
+		for(int i=1; i<100; i++){
+			System.out.println("Legendre Symbol 155/"+i+": "+primeUtils.lengendreSymbol(155, i));
+		}
+
+		for(int i=1; i<100; i++){
+			System.out.println("Jacobian 155/"+i+": "+primeUtils.calculateJacobian(155, i));
+		}
+
+		System.out.println("Solovoy:");
+		for(int i=5; i<100; i++){
+			if(primeUtils.solovoyPrimalityTest(i, 50)){
+				System.out.println(i);
+			}
+		}	
+	}
 }
