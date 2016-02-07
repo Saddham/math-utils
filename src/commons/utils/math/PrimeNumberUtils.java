@@ -288,7 +288,35 @@ public class PrimeNumberUtils {
 	}
 
 	/*End: 29/01/2016*/
-
+	
+	public long [] coPrimeSieve;
+	public final int n = 10000001;
+	public void superFastEulerTotientWithCoPrimeSeive(){
+		coPrimeSieve = new long[n];
+        coPrimeSieve[1] = 1;
+        for(int i = 2; i < n; i++) {
+            if (coPrimeSieve[i] == 0) {
+                coPrimeSieve[i] = i - 1;
+                for (int j = 2; i * j < n; j++) {
+                    if (coPrimeSieve[j] == 0)
+                        continue;
+ 
+                    int q = j;
+                    int f = i - 1;
+                    while (q % i == 0) {
+                        f *= i;
+                        q /= i;
+                    }
+                    coPrimeSieve[i * j] = f * coPrimeSieve[q];
+                }
+            }
+        }
+        
+        for(int i = 2; i < n; i++) {
+        	coPrimeSieve[i] += coPrimeSieve[i-1];
+        }
+	}
+	
 	public static void main(String[] args) {
 		PrimeNumberUtils primeUtils = new PrimeNumberUtils(1000000);
 		System.out.println(primeUtils.isPrime(165576));
